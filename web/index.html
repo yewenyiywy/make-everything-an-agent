@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Make Everything an Agent</title>
+<style>
+:root{color-scheme:dark;font-family:Inter,system-ui,-apple-system,sans-serif;background:#090e18;color:#e9eef8}
+*{box-sizing:border-box}body{margin:0}header{padding:30px max(24px,calc((100vw - 1120px)/2));border-bottom:1px solid #233049;background:#0e1523}
+h1{font-size:28px;margin:8px 0}p{color:#9cabc4}main{max-width:1120px;margin:auto;padding:30px 24px}
+.kicker{color:#79aafb;letter-spacing:.15em;text-transform:uppercase;font-size:11px;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.card{background:#111d2e;border:1px solid #273850;border-radius:14px;padding:22px}
+.num{font-size:32px;font-weight:700;margin-top:8px}.muted{color:#98a8bf;font-size:13px}
+section{margin-top:28px}table{width:100%;border-collapse:collapse;background:#111d2e;border:1px solid #273850;border-radius:12px;overflow:hidden}
+th,td{text-align:left;padding:13px 15px;border-bottom:1px solid #273850;font-size:14px}
+th{color:#9dadc4;font-weight:600}tr:last-child td{border:0}
+.status{border-radius:20px;background:#263a4d;padding:5px 10px;font-size:12px;display:inline-block}
+.status.running{background:#134e4a;color:#baf7e5}.status.review{background:#594420;color:#ffdf95}
+button{background:#2d6fe9;color:white;border:0;border-radius:8px;padding:10px 16px;cursor:pointer}
+footer{color:#73869f;margin-top:40px;font-size:12px}
+@media(max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}table{display:block;overflow-x:auto}}
+</style></head><body>
+<header><div class="kicker">Personal AI Company</div><h1>Make Everything an Agent</h1><p>Your agent workforce, organized and observable. Local MVP dashboard.</p></header>
+<main>
+<div class="grid" id="stats"></div>
+<section><div style="display:flex;justify-content:space-between;align-items:center"><h2>Task Queue</h2><button id="refresh">Refresh</button></div>
+<table><thead><tr><th>ID</th><th>Agent Role</th><th>Provider</th><th>Status</th><th>Attempts</th><th>Updated</th></tr></thead><tbody id="rows"><tr><td colspan="6">Loading…</td></tr></tbody></table></section>
+<footer>Read-only · Localhost only · Approval via CLI · Never publish tokens or private job/contact data.</footer>
+</main>
+<script>
+async function load(){
+ try{
+  const res=await fetch('/api/tasks');if(!res.ok)throw Error('HTTP '+res.status);
+  const tasks=await res.json();
+  const groups=[['Total',tasks.length],['Running',tasks.filter(x=>x.status==='running').length],['Review',tasks.filter(x=>x.status==='review').length],['Done',tasks.filter(x=>x.status==='done').length]];
+  const stats=document.getElementById('stats');stats.replaceChildren();
+  for(const [title,n] of groups){const box=document.createElement('div');box.className='card';const label=document.createElement('div');label.className='muted';label.textContent=title;const num=document.createElement('div');num.className='num';num.textContent=n;box.append(label,num);stats.append(box);}
+  const body=document.getElementById('rows');body.replaceChildren();
+  if(!tasks.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=6;td.textContent='No tasks yet. Use the CLI to add a task.';tr.append(td);body.append(tr);}
+  for(const t of tasks){const tr=document.createElement('tr');for(const value of [t.id,t.role,t.backend,t.status,t.attempts,t.updated_at]){const td=document.createElement('td');if(value===t.status){const b=document.createElement('span');b.className='status '+t.status;b.textContent=value;td.append(b)}else{td.textContent=String(value??'')}tr.append(td)}body.append(tr)}
+ }catch(e){document.getElementById('rows').textContent='Failed to load tasks: '+e.message}
+}
+document.getElementById('refresh').addEventListener('click',load);load();
+</script></body></html>
